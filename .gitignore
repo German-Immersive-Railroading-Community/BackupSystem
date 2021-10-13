@@ -130,4 +130,5 @@ dmypy.json
 
 #Own stuff
 backfiles.txt
+files.json
 testfolder/
