@@ -72,7 +72,7 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list):
     return json_data, backf
 
 
-zipname = dt.today().strftime('%Y-%m-%d')
+zipname = dt.today().strftime('%Y-%m-%d') + ".zip"
 zipfile = ZipFile(zipname, 'w')
 for root, dirs, files in os.walk(config('path')):
     combined = dirs + files
@@ -98,11 +98,17 @@ for root, dirs, files in os.walk(config('path')):
         else:
             continue
 zipfile.close()
-with open('files.json', 'w') as outfile:
-    json.dump(data, outfile)
+#with open('files.json', 'w') as outfile:
+#    json.dump(data, outfile)
 
 
 # Send the zip File to the Backupserver and delete it after
-
+ftp = FTP()
+ftp.connect(host=config('host'), port=int(config('port')))
+ftp.login(user=config('user'), passwd=config('pass'))
+month = dt.today().strftime('%Y-%m')
+ftp.cwd(f'backups/{month}')
+with open(zipname, 'rb') as fp:
+    ftp.storbinary(f'STOR {zipname}', fp)
 
 print('Backup made.')
