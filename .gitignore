@@ -132,4 +132,5 @@ dmypy.json
 backfiles.txt
 files.json
 testfolder/
+testfilex.txt
 backup.zip
