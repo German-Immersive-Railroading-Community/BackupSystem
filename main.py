@@ -3,9 +3,9 @@ import hashlib as hl
 import json
 import os
 from datetime import datetime as dt
-from ftplib import FTP
 from zipfile import ZipFile
 
+import paramiko as pk
 from decouple import config
 
 # Load/Setup the json
@@ -22,13 +22,15 @@ def implement(json, data):
 
 
 try:
-    implement(json.load(open('files.json')), data)
+    implement(json.load(open('data.json')), data)
 except FileNotFoundError:
     pass
 except json.JSONDecodeError:
     pass
 if not 'sha' in data.keys():
     data['sha'] = {}
+if not 'last' in data.keys():
+    data['last'] = '1999-12-01'
 
 
 # Scan the txt containing the files/folders to backup and put files into list
@@ -53,6 +55,7 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list):
                     filepath = str(root + '/' + f).replace('//', '/')
                     sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
                     if sha == json_data['sha'][filepath]:
+                        backf.remove(f)
                         continue
                     else:
                         json_data['sha'][filepath] = sha
@@ -72,7 +75,15 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list):
     return json_data, backf
 
 
-zipname = dt.today().strftime('%Y-%m-%d') + ".zip"
+today = dt.today().strftime('%Y-%m-%d')
+if data['last'] == today:
+    zipname = input(
+        'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')
+    if len(zipname) < 5:
+        zipname = today + ".zip"
+else:
+    zipname = today + ".zip"
+    data['last'] = today
 zipfile = ZipFile(zipname, 'w')
 for root, dirs, files in os.walk(config('path')):
     combined = dirs + files
@@ -82,6 +93,7 @@ for root, dirs, files in os.walk(config('path')):
                 filepath = str(root + '/' + f).replace('//', '/')
                 sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
                 if sha == data['sha'][filepath]:
+                    backfiles.remove(f)
                     continue
                 else:
                     zipfile.write(filepath)
@@ -98,17 +110,23 @@ for root, dirs, files in os.walk(config('path')):
         else:
             continue
 zipfile.close()
-#with open('files.json', 'w') as outfile:
-#    json.dump(data, outfile)
+if len(backfiles) > 0:
+    missing_files = ""
+    for i in backfiles:
+        missing_files += f'{i}, '
+    print(f'Some files/folders have not been found: {missing_files}')
+with open('data.json', 'w') as outfile:
+    json.dump(data, outfile)
 
 
 # Send the zip File to the Backupserver and delete it after
-ftp = FTP()
-ftp.connect(host=config('host'), port=int(config('port')))
-ftp.login(user=config('user'), passwd=config('pass'))
-month = dt.today().strftime('%Y-%m')
-ftp.cwd(f'backups/{month}')
-with open(zipname, 'rb') as fp:
-    ftp.storbinary(f'STOR {zipname}', fp)
+ftp = pk.Transport((config('host'), int(config('port'))))
+ftp.connect(username=config('user'), password=config('pass'))
+sftp = pk.SFTPClient.from_transport(ftp)
+sftp.put(f'./{zipname}', 'backups/' +
+         dt.today().strftime('%Y-%m') + f'/{zipname}')
+sftp.close()
+ftp.close()
+os.remove(zipname)
 
 print('Backup made.')

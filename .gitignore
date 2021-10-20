@@ -130,7 +130,7 @@ dmypy.json
 
 #Own stuff
 backfiles.txt
-files.json
+data.json
 testfolder/
 testfilex.txt
 *.zip
