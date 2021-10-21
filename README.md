@@ -28,11 +28,11 @@ You can either create this file and leave it alone or let the program do it. It 
 
 ### 1.2.3. .env
 ```
-path="<Path of of the folder where the files are in>"
-host="<domain.backup.server>"
-port="<Port of Backup Server>"
-user="<User for FTP connection>"
-pass="<Password for the user>"
+path=<Path of of the folder where the files are in>
+host=<domain.backup.server>
+port=<Port of Backup Server>
+user=<User for FTP connection>
+pass=<Password for the user>
 ```
 
 ### 1.2.4. The ZIP
