@@ -37,7 +37,10 @@ if not 'last' in data.keys():
 backfiles = []
 try:
     for line in open('backfiles.txt'):
-        backfiles.append(line.replace('\n', ''))
+        if list(line)[0] == '#':
+            continue
+        else:
+            backfiles.append(line.replace('\n', ''))
 except FileNotFoundError:
     print('The file containing the files and folders that should be backed up (backfiles.txt) has not been found!')
     exit()
@@ -47,26 +50,32 @@ except FileNotFoundError:
 # If exist: Check the files for their SHA and add folder/file to the zip
 # Else: continue
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
-def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list):
+def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all : bool = True):
     for root, dirs, files in os.walk(dir):
         for f in files:
-            if f in backf:
-                try:
-                    filepath = str(root + '/' + f).replace('//', '/')
-                    sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
-                    if sha == json_data['sha'][filepath]:
-                        backf.remove(f)
-                        continue
-                    else:
-                        json_data['sha'][filepath] = sha
-                        zip.write(filepath)
-                        backf.remove(f)
-                except KeyError:
-                    json_data['sha'][filepath] = sha
-                    zip.write(filepath)
-                    backf.remove(f)
+            if include_all:
+                filepath = str(root + '/' + f).replace('//', '/')
+                filepath_local = filepath.replace(config('path'), '')
+                json_data['sha'][filepath_local] = hl.sha256(open(filepath, 'rb').read()).hexdigest()
+                zip.write(filepath, filepath_local)
             else:
-                continue
+                if f in backf:
+                    try:
+                        filepath = str(root + '/' + f).replace('//', '/')
+                        sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
+                        if sha == json_data['sha'][filepath_local]:
+                            backf.remove(f)
+                            continue
+                        else:
+                            json_data['sha'][filepath_local] = sha
+                            zip.write(filepath, filepath_local)
+                            backf.remove(f)
+                    except KeyError:
+                        json_data['sha'][filepath_local] = sha
+                        zip.write(filepath, filepath_local)
+                        backf.remove(f)
+                else:
+                    continue
         for d in dirs:
             if d in backf:
                 backf.remove(d)
@@ -91,21 +100,22 @@ for root, dirs, files in os.walk(config('path')):
         if f in backfiles:
             try:
                 filepath = str(root + '/' + f).replace('//', '/')
+                filepath_local = filepath.replace(config('path'), '')
                 sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
-                if sha == data['sha'][filepath]:
+                if sha == data['sha'][filepath_local]:
                     backfiles.remove(f)
                     continue
                 else:
-                    zipfile.write(filepath)
-                    data['sha'][filepath] = sha
+                    zipfile.write(filepath, filepath_local)
+                    data['sha'][filepath_local] = sha
                     backfiles.remove(f)
             except IsADirectoryError:
                 data, backfiles = add_zip(
                     filepath + '/', zipfile, data, backfiles)
                 backfiles.remove(f)
             except KeyError:
-                data['sha'][filepath] = sha
-                zipfile.write(filepath)
+                data['sha'][filepath_local] = sha
+                zipfile.write(filepath, filepath_local)
                 backfiles.remove(f)
         else:
             continue
