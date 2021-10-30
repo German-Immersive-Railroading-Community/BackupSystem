@@ -33,6 +33,7 @@ host=<domain.backup.server>
 port=<Port of Backup Server>
 user=<User for FTP connection>
 pass=<Password for the user>
+backfiles=<Path to backfiles.txt>
 ```
 
 ### 1.2.4. The ZIP
