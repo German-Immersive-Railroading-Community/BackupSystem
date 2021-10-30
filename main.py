@@ -36,7 +36,7 @@ if not 'last' in data.keys():
 # Scan the txt containing the files/folders to backup and put files into list
 backfiles = []
 try:
-    for line in open('backfiles.txt'):
+    for line in open(config('backfiles')):
         if list(line)[0] == '#':
             continue
         else:
