@@ -1,6 +1,7 @@
 import ftplib as ftp
 import hashlib as hl
 import json
+import logging as lg
 import os
 from datetime import datetime as dt
 from zipfile import ZipFile
@@ -24,12 +25,13 @@ def implement(json, data):
 try:
     implement(json.load(open('data.json')), data)
 except FileNotFoundError:
-    pass
+    lg.info('data.json not found; creating...')
 except json.JSONDecodeError:
-    pass
+    lg.info('There was something wrong with the data.json; fixing...')
 if not 'sha' in data.keys():
     data['sha'] = {}
 if not 'last' in data.keys():
+    lg.info('No last update date found')
     data['last'] = '1999-12-01'
 
 
@@ -50,19 +52,21 @@ except FileNotFoundError:
 # If exist: Check the files for their SHA and add folder/file to the zip
 # Else: continue
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
-def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all : bool = True):
+def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: bool = True):
     for root, dirs, files in os.walk(dir):
         for f in files:
             if include_all:
                 filepath = str(root + '/' + f).replace('//', '/')
                 filepath_local = filepath.replace(config('path'), '')
-                json_data['sha'][filepath_local] = hl.sha256(open(filepath, 'rb').read()).hexdigest()
+                json_data['sha'][filepath_local] = hl.sha256(
+                    open(filepath, 'rb').read()).hexdigest()
                 zip.write(filepath, filepath_local)
             else:
                 if f in backf:
                     try:
                         filepath = str(root + '/' + f).replace('//', '/')
-                        sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
+                        sha = hl.sha256(
+                            open(filepath, 'rb').read()).hexdigest()
                         if sha == json_data['sha'][filepath_local]:
                             backf.remove(f)
                             continue
