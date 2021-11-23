@@ -35,6 +35,7 @@ port=<Port of Backup Server>
 user=<User for FTP connection>
 pass=<Password for the user>
 backfiles=<Path to backfiles.txt>
+log_level=<Level of the logging (debug/info/warning/...)>
 ```
 
 ### 1.2.4. The ZIP
