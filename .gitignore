@@ -136,3 +136,4 @@ testfilex.txt
 *.zip
 start.sh
 files.json
+logs/
