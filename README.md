@@ -36,6 +36,7 @@ user=<User for FTP connection>
 pass=<Password for the user>
 backfiles=<Path to backfiles.txt>
 log_level=<Level of the logging (debug/info/warning/...)>
+data_path=<Path to data.json>
 ```
 
 ### 1.2.4. The ZIP
