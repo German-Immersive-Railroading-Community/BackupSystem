@@ -12,6 +12,14 @@ from decouple import config
 
 today = dt.today().strftime('%Y-%m-%d')
 logname = 'logs/' + today + '.log'
+
+if os.path.exists('./logs/'):
+    try:
+        open(logname, 'w').close()
+    except FileNotFoundError:
+        open(logname, 'a').close()
+
+
 log_level = str(config('log_level')).upper()
 lg.basicConfig(filename=logname, level=log_level,
                format='%(asctime)s : %(message)s', datefmt='%I:%M:%S')
