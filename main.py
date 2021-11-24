@@ -16,11 +16,7 @@ logname = 'logs/' + today + '.log'
 if not os.path.exists('./logs/'):
     os.mkdir('./logs/')
 
-try:
-    open(logname, 'w').close()
-except FileNotFoundError:
-    open(logname, 'a').close()
-
+open(logname, 'a').close()
 
 
 log_level = str(config('log_level')).upper()
@@ -43,7 +39,7 @@ def implement(json, data):
 
 
 try:
-    implement(json.load(open('data.json')), data)
+    implement(json.load(open(config('data_path'))), data)
 except FileNotFoundError:
     lg.warning('data.json not found; creating...')
 except json.JSONDecodeError:
@@ -177,7 +173,7 @@ if len(backfiles) > 0:
         missing_files += f'{i}, '
     lg.warning(f'Some files/folders have not been found: {missing_files}')
 lg.info('Updating data.json')
-with open('data.json', 'w') as outfile:
+with open(config('data_path'), 'w') as outfile:
     json.dump(data, outfile)
 
 
