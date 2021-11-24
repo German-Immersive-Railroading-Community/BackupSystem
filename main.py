@@ -187,7 +187,6 @@ start_time = time.time()
 ftp = pk.Transport((config('host'), int(config('port'))))
 lg.debug('Set up FTP object')
 ftp.connect(username=config('user'), password=config('pass'))
-lg.info('Connected and logged in')
 sftp = pk.SFTPClient.from_transport(ftp)
 lg.info(f'Sending {zipname}...')
 sftp.put(f'./{zipname}', 'backups/' +
