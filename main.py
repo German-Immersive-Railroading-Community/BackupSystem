@@ -13,11 +13,14 @@ from decouple import config
 today = dt.today().strftime('%Y-%m-%d')
 logname = 'logs/' + today + '.log'
 
-if os.path.exists('./logs/'):
-    try:
-        open(logname, 'w').close()
-    except FileNotFoundError:
-        open(logname, 'a').close()
+if not os.path.exists('./logs/'):
+    os.mkdir('./logs/')
+
+try:
+    open(logname, 'w').close()
+except FileNotFoundError:
+    open(logname, 'a').close()
+
 
 
 log_level = str(config('log_level')).upper()
