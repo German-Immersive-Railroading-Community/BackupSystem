@@ -4,7 +4,6 @@ import hashlib as hl
 import json
 import logging as lg
 import os
-import random
 import time
 from datetime import datetime as dt
 from zipfile import ZipFile
@@ -13,11 +12,14 @@ import paramiko as pk
 from decouple import config
 
 parser = ap.ArgumentParser('Parses arguments')
-parser.add_argument('--unattended', type=bool, default=True, help='Enables/Disables the unattended mode (Default: True)')
+parser.add_argument('--unattended', type=bool, default=True,
+                    help='Enables/Disables the unattended mode (Default: True)')
 args = vars(parser.parse_args())
 unattended = args['unattended']
 
 today = dt.today().strftime('%Y-%m-%d')
+now = dt.now()
+current_time = now.strftime('%H%M%S')
 logname = 'logs/' + today + '.log'
 
 if not os.path.exists('./logs/'):
@@ -126,10 +128,8 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: b
 if data['last'] == today:
     lg.info('Detected that there already ran an update today; asking for new name...')
     if unattended:
-        #TODO: Count the numbers up, depending on how many already ran
-        lg.info('Program running in unattended mode; adding random number to name')
-        random_number = random.randint(1, 200)
-        zipname = f'{today}({random_number}).zip'
+        lg.info('Program running in unattended mode; adding time to name')
+        zipname = f'{today}({current_time}).zip'
     else:
         zipname = input(
             'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')

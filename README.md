@@ -46,7 +46,7 @@ The name of the zip is in the following pattern: `YYYY-mm-dd.zip`. It contains o
 The zip-file is transfered over SFTP (SSH-FTP). Therefore the Backupserver needs to support SFTP. The Library used is [Paramiko](https://www.paramiko.org/ "Paramiko Website").
 
 ## 1.4. Command line arguments  
-There currently is only one CLA: The unattended mode. In this mode, which is default on, the program will not take user input (when required) and handle these situations itself so the program can make it's backup.
+There currently is only one CLA: The unattended mode. In this mode, which is default on, the program will not take user input (when required) and handle these situations itself so the program can make it's backup. When there already ran updates, it will add the time of the backup to the name of the ZIP.
 
 ## 1.5. Future features  
 A list of what should come can be found on [Trello](https://trello.com/b/MbPKL9sD/backupsystem). If you like, you're invited to help integrate these features or make new suggestions. For that, please create an Issue here on GitHub.
