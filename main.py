@@ -19,7 +19,7 @@ unattended = args['unattended']
 
 today = dt.today().strftime('%Y-%m-%d')
 now = dt.now()
-current_time = now.strftime('%H%M%S')
+current_time = now.strftime('%H:%M:%S')
 logname = f'logs/{today}({current_time}).log'
 
 if not os.path.exists('./logs/'):
