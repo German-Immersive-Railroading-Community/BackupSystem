@@ -7,7 +7,8 @@
     - [1.2.3. .env](#123-env)
     - [1.2.4. The ZIP](#124-the-zip)
   - [1.3. File transfer](#13-file-transfer)
-  - [1.4. Future features](#14-future-features)
+  - [1.4. Command line arguments](#14-command-line-arguments)
+  - [1.5. Future features](#15-future-features)
 # 1. BackupSystem
 The System for making Backups of the GIRC Server. It packs all the files/folders that need to be backed up into a zip-file and sends it to a Backupserver over SFTP (not FTPS!). I there are any questions or bugs feel free to open a issue.
 
@@ -44,5 +45,8 @@ The name of the zip is in the following pattern: `YYYY-mm-dd.zip`. It contains o
 ## 1.3. File transfer
 The zip-file is transfered over SFTP (SSH-FTP). Therefore the Backupserver needs to support SFTP. The Library used is [Paramiko](https://www.paramiko.org/ "Paramiko Website").
 
-## 1.4. Future features  
+## 1.4. Command line arguments  
+There currently is only one CLA: The unattended mode. In this mode, which is default on, the program will not take user input (when required) and handle these situations itself so the program can make it's backup.
+
+## 1.5. Future features  
 A list of what should come can be found on [Trello](https://trello.com/b/MbPKL9sD/backupsystem). If you like, you're invited to help integrate these features or make new suggestions. For that, please create an Issue here on GitHub.
