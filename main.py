@@ -1,3 +1,4 @@
+import argparse as ap
 import ftplib as ftp
 import hashlib as hl
 import json
@@ -10,8 +11,16 @@ from zipfile import ZipFile
 import paramiko as pk
 from decouple import config
 
+parser = ap.ArgumentParser('Parses arguments')
+parser.add_argument('--unattended', type=bool, default=True,
+                    help='Enables/Disables the unattended mode (Default: True)')
+args = vars(parser.parse_args())
+unattended = args['unattended']
+
 today = dt.today().strftime('%Y-%m-%d')
-logname = 'logs/' + today + '.log'
+now = dt.now()
+current_time = now.strftime('%H:%M:%S')
+logname = f'logs/{today}({current_time}).log'
 
 if not os.path.exists('./logs/'):
     os.mkdir('./logs/')
@@ -118,11 +127,15 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: b
 
 if data['last'] == today:
     lg.info('Detected that there already ran an update today; asking for new name...')
-    zipname = input(
-        'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')
-    if len(zipname) < 5:
-        zipname = today + ".zip"
-        lg.info('No name given; overwriting...')
+    if unattended:
+        lg.info('Program running in unattended mode; adding time to name')
+        zipname = f'{today}({current_time}).zip'
+    else:
+        zipname = input(
+            'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')
+        if len(zipname) < 5:
+            zipname = today + ".zip"
+            lg.info('No name given; overwriting...')
 else:
     lg.info('No update ran today.')
     zipname = today + ".zip"
