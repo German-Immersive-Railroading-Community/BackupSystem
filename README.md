@@ -10,10 +10,10 @@
   - [1.4. Command line arguments](#14-command-line-arguments)
   - [1.5. Future features](#15-future-features)
 # 1. BackupSystem
-A universal system for making Backups of the GIRC Server. It packs all the files/folders that need to be backed up into a zip-file and sends it to a Backupserver over SFTP (not FTPS!). I there are any questions or bugs feel free to open an issue.
+A universal system for making Backups of the GIRC Server. It packs all the files/folders that need to be backed up into a zip-file and sends it to a Backupserver over SFTP (not FTPS!). If there are any questions or bugs feel free to open an issue.
 
 ## 1.1. Requirements
-The Backupserver will need a folder with the current year-month ('YYYY-mm'). This _can_ be made through Cron (`0 0 1 * * mkdir /path/of/folder/$(date +"%Y-%m")`) or manually.  
+The Backupserver will need a folder with the current year-month ('YYYY-mm'). This _can_ be made through Cron or manually.  
 The files that are needed are:  
 - [backfiles.txt](#121-backfilestxt)
 - [data.json](#122-datajson)
