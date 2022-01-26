@@ -12,33 +12,37 @@ from zipfile import ZipFile
 import paramiko as pk
 from decouple import config
 
+# Parse the CLAs
 parser = ap.ArgumentParser('Parses arguments')
 parser.add_argument('--unattended', type=bool, default=True,
                     help='Enables/Disables the unattended mode (Default: True)')
 args = vars(parser.parse_args())
 unattended = args['unattended']
 
+#TODO: Read the variables and options into variables
+
+#Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
 now = dt.now()
 current_time = now.strftime('%H:%M:%S')
-logname = f'logs/{today}({current_time}).log'
 
+# Prepare the logging
+logname = f'logs/{today}({current_time}).log'
 if not os.path.exists('./logs/'):
     os.mkdir('./logs/')
-
 open(logname, 'a').close()
 
-
+# Set up logging
 log_level = str(config('log_level')).upper()
 lg.basicConfig(filename=logname, level=log_level,
                format='%(asctime)s : %(message)s', datefmt='%I:%M:%S')
 
 lg.info('Preparing...')
+
 # Load/Setup the json
 data = {}
-
-
 def implement(json, data):
+    """Loads data from a JSON"""
     lg.info('Reading data from data.json')
     for key, value in json.items():
         if type(value) == dict and key in data:
@@ -46,8 +50,6 @@ def implement(json, data):
         else:
             data[key] = value
     return data
-
-
 try:
     implement(json.load(open(config('data_path'))), data)
 except FileNotFoundError:
@@ -78,12 +80,14 @@ except FileNotFoundError:
 lg.info('Done reading backfiles.txt')
 
 # Go trough the files, check if the file/folder exists in backfiles list
-# If exist: Check the files for their SHA and add folder/file to the zip
+# If exist: Check the files for their SHA (or not, depending on the option) and add folder/file to the zip
 # Else: continue
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
 
 
 def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: bool = True):
+    """Recurses into directorys and adds them to the backup
+    Returns the given JSON and updated backfiles.txt"""
     for root, dirs, files in os.walk(dir):
         for f in files:
             if include_all:

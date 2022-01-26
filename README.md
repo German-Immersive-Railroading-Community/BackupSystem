@@ -23,7 +23,7 @@ What the contents of these are and where they are saved is listed below.
 
 ## 1.2. The Files
 ### 1.2.1. backfiles.txt
-This file holds the files and folders that should be backed up by the program. Every file/folder needs to be written on a seperate line with its exact name, without it's root folder (`./testfolder/testfile.txt > testfile.txt` or `./testfolder/testfolder2 > testfolder2`). You can use a '#' at the first character on a line to make the line a comment and therefore ignored. It can be anywhere, but the path needs to be specified in the [config.ini](#123-configini). [Test]
+This file holds the files and folders that should be backed up by the program. Every file/folder needs to be written on a seperate line with its exact name, without it's root folder (`./testfolder/testfile.txt > testfile.txt` or `./testfolder/testfolder2 > testfolder2`). You can use a '#' at the first character on a line to make the line a comment and therefore ignored. It can be anywhere, but the path needs to be specified in the [config.ini](#123-configini).
 
 ### 1.2.2. data.json
 You can either create this file in the program rundirectory and leave it alone or let the program do it. It stores the SHA256 of all files that have ever been backed up and the last time the backup ran. If you want to backup a file that hasn't changed, delete the corresponding entry in the json.  
