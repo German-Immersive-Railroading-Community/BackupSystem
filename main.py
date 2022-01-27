@@ -10,7 +10,6 @@ from datetime import datetime as dt
 from zipfile import ZipFile
 
 import paramiko as pk
-from decouple import config
 
 # Parse the CLAs
 parser = ap.ArgumentParser('Parses arguments')
@@ -19,7 +18,11 @@ parser.add_argument('--unattended', type=bool, default=True,
 args = vars(parser.parse_args())
 unattended = args['unattended']
 
-#TODO: Read the variables and options into variables
+# Setting up and reading the config 
+config = cp.ConfigParser()
+config.read("config.ini")
+config_variables = config["VARIABLES"]
+config_options = config["OPTIONS"]
 
 #Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
@@ -33,7 +36,7 @@ if not os.path.exists('./logs/'):
 open(logname, 'a').close()
 
 # Set up logging
-log_level = str(config('log_level')).upper()
+log_level = str(config_variables["log_level"]).upper()
 lg.basicConfig(filename=logname, level=log_level,
                format='%(asctime)s : %(message)s', datefmt='%I:%M:%S')
 
@@ -51,7 +54,7 @@ def implement(json, data):
             data[key] = value
     return data
 try:
-    implement(json.load(open(config('data_path'))), data)
+    implement(json.load(open(config_variables["data_path"])), data)
 except FileNotFoundError:
     lg.warning('data.json not found; creating...')
 except json.JSONDecodeError:
@@ -67,7 +70,7 @@ if not 'last' in data.keys():
 backfiles = []
 try:
     lg.info('Reading backfiles.txt...')
-    for line in open(config('backfiles')):
+    for line in open(config_variables["backfiles"]):
         if list(line)[0] == '#':
             continue
         else:
@@ -93,7 +96,7 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: b
             if include_all:
                 filepath = str(root + '/' + f).replace('//', '/')
                 lg.debug(f'''"Include all" is true; backing up {filepath} ''')
-                filepath_local = filepath.replace(config('path'), '')
+                filepath_local = filepath.replace(config_variables["path"], '')
                 json_data['sha'][filepath_local] = hl.sha256(
                     open(filepath, 'rb').read()).hexdigest()
                 zip.write(filepath, filepath_local)
@@ -149,7 +152,7 @@ else:
 zipfile = ZipFile(zipname, 'w')
 lg.info(f'Done preparing; start writing to {zipname}')
 start_time = time.time()
-for root, dirs, files in os.walk(config('path')):
+for root, dirs, files in os.walk(config_variables["path"]):
     combined = dirs + files
     lg.debug(f'Found dirs/files: {combined}')
     for f in combined:
@@ -157,7 +160,7 @@ for root, dirs, files in os.walk(config('path')):
             lg.debug(f'{f} has been found in backfiles; backing up')
             try:
                 filepath = str(root + '/' + f).replace('//', '/')
-                filepath_local = filepath.replace(config('path'), '')
+                filepath_local = filepath.replace(config_variables["path"], '')
                 lg.debug('Getting SHA')
                 sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
                 if sha == data['sha'][filepath_local]:
@@ -191,16 +194,16 @@ if len(backfiles) > 0:
         missing_files += f'{i}, '
     lg.warning(f'Some files/folders have not been found: {missing_files}')
 lg.info('Updating data.json')
-with open(config('data_path'), 'w') as outfile:
+with open(config_variables["data_path"], 'w') as outfile:
     json.dump(data, outfile)
 
 
 # Send the zip File to the Backupserver and delete it after
 lg.info('Starting transfer')
 start_time = time.time()
-ftp = pk.Transport((config('host'), int(config('port'))))
+ftp = pk.Transport((config_variables["host"], int(config_variables["port"])))
 lg.debug('Set up FTP object')
-ftp.connect(username=config('user'), password=config('pass'))
+ftp.connect(username=config_variables["user"], password=config_variables["pass"])
 sftp = pk.SFTPClient.from_transport(ftp)
 lg.info(f'Sending {zipname}...')
 sftp.put(f'./{zipname}', 'backups/' +

@@ -39,6 +39,8 @@ pass=<Password for the user>
 backfiles=<Path to backfiles.txt>
 log_level=<Level of the logging (debug/info/warning/...)>
 data_path=<Path to data.json>
+
+[OPTIONS]
 ```
 
 ### 1.2.4. The ZIP
