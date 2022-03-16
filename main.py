@@ -23,6 +23,7 @@ config = cp.ConfigParser()
 config.read("config.ini")
 config_variables = config["VARIABLES"]
 config_options = config["OPTIONS"]
+sha_check = config_options['sha_check'].getboolean()
 
 #Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
@@ -107,15 +108,21 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: b
                         filepath = str(root + '/' + f).replace('//', '/')
                         sha = hl.sha256(
                             open(filepath, 'rb').read()).hexdigest()
-                        if sha == json_data['sha'][filepath_local]:
-                            lg.debug('''SHA didn't change; ignoring ''')
-                            backf.remove(f)
-                            continue
+                        if sha_check:
+                            if sha == json_data['sha'][filepath_local]:
+                                lg.debug('''SHA didn't change; ignoring ''')
+                                backf.remove(f)
+                                continue
+                            else:
+                                lg.debug('SHA changed; adding to zip')
+                                json_data['sha'][filepath_local] = sha
+                                zip.write(filepath, filepath_local)
+                                backf.remove(f)
                         else:
-                            lg.debug('SHA changed; adding to zip')
-                            json_data['sha'][filepath_local] = sha
-                            zip.write(filepath, filepath_local)
-                            backf.remove(f)
+                            lg.debug('SHA-Check disabled, backing up')
+                            zipfile.write(filepath, filepath_local)
+                            data['sha'][filepath_local] = sha
+                            backfiles.remove(f)
                     except KeyError:
                         lg.debug('No old SHA found; adding')
                         json_data['sha'][filepath_local] = sha
@@ -163,12 +170,18 @@ for root, dirs, files in os.walk(config_variables["path"]):
                 filepath_local = filepath.replace(config_variables["path"], '')
                 lg.debug('Getting SHA')
                 sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
-                if sha == data['sha'][filepath_local]:
-                    lg.debug('''SHA didn't change; ignoring ''')
-                    backfiles.remove(f)
-                    continue
+                if sha_check:
+                    if sha == data['sha'][filepath_local]:
+                        lg.debug('''SHA didn't change; ignoring ''')
+                        backfiles.remove(f)
+                        continue
+                    else:
+                        lg.debug('SHA changed; adding to zip')
+                        zipfile.write(filepath, filepath_local)
+                        data['sha'][filepath_local] = sha
+                        backfiles.remove(f)
                 else:
-                    lg.debug('SHA changed; adding to zip')
+                    lg.debug('SHA-Check disabled, backing up')
                     zipfile.write(filepath, filepath_local)
                     data['sha'][filepath_local] = sha
                     backfiles.remove(f)

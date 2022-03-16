@@ -29,19 +29,7 @@ This file holds the files and folders that should be backed up by the program. E
 You can either create this file in the program rundirectory and leave it alone or let the program do it. It stores the SHA256 of all files that have ever been backed up and the last time the backup ran. If you want to backup a file that hasn't changed, delete the corresponding entry in the json.  
 
 ### 1.2.3. config.ini
-```
-[VARIABLES]
-path=<Path of of the folder where the files are in>
-host=<domain.backup.server>
-port=<Port of Backup Server>
-user=<User for FTP connection>
-pass=<Password for the user>
-backfiles=<Path to backfiles.txt>
-log_level=<Level of the logging (debug/info/warning/...)>
-data_path=<Path to data.json>
-
-[OPTIONS]
-```
+An example can be found [in the Repo](config.ini). It's pretty self-explanatory.
 
 ### 1.2.4. The ZIP
 The name of the zip is in the following pattern: `YYYY-mm-dd.zip`. It contains only files that have changed, in order to keep the size and therefore the tranfer time small. If there already ran an update that day, the user will be asked to give the zip a name. That's made so the previous file will not be overwritten. 
