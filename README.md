@@ -26,13 +26,13 @@ What the contents of these are and where they are saved is listed below.
 This file holds the files and folders that should be backed up by the program. Every file/folder needs to be written on a seperate line with its exact name, without it's root folder (`./testfolder/testfile.txt > testfile.txt` or `./testfolder/testfolder2 > testfolder2`). You can use a '#' at the first character on a line to make the line a comment and therefore ignored. It can be anywhere, but the path needs to be specified in the [config.ini](#123-configini).
 
 ### 1.2.2. data.json
-You can either create this file in the program rundirectory and leave it alone or let the program do it. It stores the SHA256 of all files that have ever been backed up and the last time the backup ran. If you want to backup a file that hasn't changed, delete the corresponding entry in the json.  
+You can either create this file in the program rundirectory and leave it alone or let the program do it. It stores the SHA256 of all files that have ever been backed up and the last time the backup ran. If you want to backup a file that hasn't changed, delete the corresponding entry in the json or turn off the SHA-Check in the [config](#123-configini) (DISCLAIMER: This will backup all files, no matter if new/changed or not).  
 
 ### 1.2.3. config.ini
 An example can be found [in the Repo](config.ini). It's pretty self-explanatory.
 
 ### 1.2.4. The ZIP
-The name of the zip is in the following pattern: `YYYY-mm-dd.zip`. It contains only files that have changed, in order to keep the size and therefore the tranfer time small. If there already ran an update that day, the user will be asked to give the zip a name. That's made so the previous file will not be overwritten. 
+The name of the zip is in the following pattern: `YYYY-mm-dd.zip`. By default (changeable in the [config](#123-configini)), it contains only files that have changed, in order to keep the size and therefore the tranfer time small. If there already ran an update that day, the user will be asked to give the zip a name. That's made so the previous file will not be overwritten. If the [unattended mode](#14-command-line-arguments) is turned on, the program will handle this situation itself.
 ## 1.3. File transfer
 The zip-file is transfered over SFTP (SSH-FTP). Therefore the Backupserver needs to support SFTP. The Library used is [Paramiko](https://www.paramiko.org/ "Paramiko Website").
 
