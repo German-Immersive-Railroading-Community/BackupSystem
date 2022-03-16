@@ -23,7 +23,7 @@ config = cp.ConfigParser()
 config.read("config.ini")
 config_variables = config["VARIABLES"]
 config_options = config["OPTIONS"]
-sha_check = config['OPTIONS']['sha_check'].getboolean()
+sha_check = config_options.getboolean('sha_check')
 
 #Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
