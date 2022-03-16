@@ -1,4 +1,5 @@
 import argparse as ap
+import configparser as cp
 import ftplib as ftp
 import hashlib as hl
 import json
@@ -9,35 +10,43 @@ from datetime import datetime as dt
 from zipfile import ZipFile
 
 import paramiko as pk
-from decouple import config
 
+# Parse the CLAs
 parser = ap.ArgumentParser('Parses arguments')
 parser.add_argument('--unattended', type=bool, default=True,
                     help='Enables/Disables the unattended mode (Default: True)')
 args = vars(parser.parse_args())
 unattended = args['unattended']
 
+# Setting up and reading the config 
+config = cp.ConfigParser()
+config.read("config.ini")
+config_variables = config["VARIABLES"]
+config_options = config["OPTIONS"]
+sha_check = config_options['sha_check'].getboolean()
+
+#Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
 now = dt.now()
 current_time = now.strftime('%H:%M:%S')
-logname = f'logs/{today}({current_time}).log'
 
+# Prepare the logging
+logname = f'logs/{today}({current_time}).log'
 if not os.path.exists('./logs/'):
     os.mkdir('./logs/')
-
 open(logname, 'a').close()
 
-
-log_level = str(config('log_level')).upper()
+# Set up logging
+log_level = str(config_variables["log_level"]).upper()
 lg.basicConfig(filename=logname, level=log_level,
                format='%(asctime)s : %(message)s', datefmt='%I:%M:%S')
 
 lg.info('Preparing...')
+
 # Load/Setup the json
 data = {}
-
-
 def implement(json, data):
+    """Loads data from a JSON"""
     lg.info('Reading data from data.json')
     for key, value in json.items():
         if type(value) == dict and key in data:
@@ -45,10 +54,8 @@ def implement(json, data):
         else:
             data[key] = value
     return data
-
-
 try:
-    implement(json.load(open(config('data_path'))), data)
+    implement(json.load(open(config_variables["data_path"])), data)
 except FileNotFoundError:
     lg.warning('data.json not found; creating...')
 except json.JSONDecodeError:
@@ -64,7 +71,7 @@ if not 'last' in data.keys():
 backfiles = []
 try:
     lg.info('Reading backfiles.txt...')
-    for line in open(config('backfiles')):
+    for line in open(config_variables["backfiles"]):
         if list(line)[0] == '#':
             continue
         else:
@@ -77,18 +84,20 @@ except FileNotFoundError:
 lg.info('Done reading backfiles.txt')
 
 # Go trough the files, check if the file/folder exists in backfiles list
-# If exist: Check the files for their SHA and add folder/file to the zip
+# If exist: Check the files for their SHA (or not, depending on the option) and add folder/file to the zip
 # Else: continue
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
 
 
 def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: bool = True):
+    """Recurses into directorys and adds them to the backup
+    Returns the given JSON and updated backfiles.txt"""
     for root, dirs, files in os.walk(dir):
         for f in files:
             if include_all:
                 filepath = str(root + '/' + f).replace('//', '/')
                 lg.debug(f'''"Include all" is true; backing up {filepath} ''')
-                filepath_local = filepath.replace(config('path'), '')
+                filepath_local = filepath.replace(config_variables["path"], '')
                 json_data['sha'][filepath_local] = hl.sha256(
                     open(filepath, 'rb').read()).hexdigest()
                 zip.write(filepath, filepath_local)
@@ -99,15 +108,21 @@ def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: b
                         filepath = str(root + '/' + f).replace('//', '/')
                         sha = hl.sha256(
                             open(filepath, 'rb').read()).hexdigest()
-                        if sha == json_data['sha'][filepath_local]:
-                            lg.debug('''SHA didn't change; ignoring ''')
-                            backf.remove(f)
-                            continue
+                        if sha_check:
+                            if sha == json_data['sha'][filepath_local]:
+                                lg.debug('''SHA didn't change; ignoring ''')
+                                backf.remove(f)
+                                continue
+                            else:
+                                lg.debug('SHA changed; adding to zip')
+                                json_data['sha'][filepath_local] = sha
+                                zip.write(filepath, filepath_local)
+                                backf.remove(f)
                         else:
-                            lg.debug('SHA changed; adding to zip')
-                            json_data['sha'][filepath_local] = sha
-                            zip.write(filepath, filepath_local)
-                            backf.remove(f)
+                            lg.debug('SHA-Check disabled, backing up')
+                            zipfile.write(filepath, filepath_local)
+                            data['sha'][filepath_local] = sha
+                            backfiles.remove(f)
                     except KeyError:
                         lg.debug('No old SHA found; adding')
                         json_data['sha'][filepath_local] = sha
@@ -144,7 +159,7 @@ else:
 zipfile = ZipFile(zipname, 'w')
 lg.info(f'Done preparing; start writing to {zipname}')
 start_time = time.time()
-for root, dirs, files in os.walk(config('path')):
+for root, dirs, files in os.walk(config_variables["path"]):
     combined = dirs + files
     lg.debug(f'Found dirs/files: {combined}')
     for f in combined:
@@ -152,15 +167,21 @@ for root, dirs, files in os.walk(config('path')):
             lg.debug(f'{f} has been found in backfiles; backing up')
             try:
                 filepath = str(root + '/' + f).replace('//', '/')
-                filepath_local = filepath.replace(config('path'), '')
+                filepath_local = filepath.replace(config_variables["path"], '')
                 lg.debug('Getting SHA')
                 sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
-                if sha == data['sha'][filepath_local]:
-                    lg.debug('''SHA didn't change; ignoring ''')
-                    backfiles.remove(f)
-                    continue
+                if sha_check:
+                    if sha == data['sha'][filepath_local]:
+                        lg.debug('''SHA didn't change; ignoring ''')
+                        backfiles.remove(f)
+                        continue
+                    else:
+                        lg.debug('SHA changed; adding to zip')
+                        zipfile.write(filepath, filepath_local)
+                        data['sha'][filepath_local] = sha
+                        backfiles.remove(f)
                 else:
-                    lg.debug('SHA changed; adding to zip')
+                    lg.debug('SHA-Check disabled, backing up')
                     zipfile.write(filepath, filepath_local)
                     data['sha'][filepath_local] = sha
                     backfiles.remove(f)
@@ -186,16 +207,16 @@ if len(backfiles) > 0:
         missing_files += f'{i}, '
     lg.warning(f'Some files/folders have not been found: {missing_files}')
 lg.info('Updating data.json')
-with open(config('data_path'), 'w') as outfile:
+with open(config_variables["data_path"], 'w') as outfile:
     json.dump(data, outfile)
 
 
 # Send the zip File to the Backupserver and delete it after
 lg.info('Starting transfer')
 start_time = time.time()
-ftp = pk.Transport((config('host'), int(config('port'))))
+ftp = pk.Transport((config_variables["host"], int(config_variables["port"])))
 lg.debug('Set up FTP object')
-ftp.connect(username=config('user'), password=config('pass'))
+ftp.connect(username=config_variables["user"], password=config_variables["pass"])
 sftp = pk.SFTPClient.from_transport(ftp)
 lg.info(f'Sending {zipname}...')
 sftp.put(f'./{zipname}', 'backups/' +
