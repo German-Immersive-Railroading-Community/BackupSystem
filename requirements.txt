@@ -1,6 +1,6 @@
 autopep8==1.6.0
 bcrypt==3.2.2
-cffi==1.15.0
+cffi==1.15.1
 cryptography==37.0.2
 paramiko==2.11.0
 pkg_resources==0.0.0
