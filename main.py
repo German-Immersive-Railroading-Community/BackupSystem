@@ -153,7 +153,7 @@ def add_files_to_zip(zip_file: ZipFile, folder):
 
 lg.info('Starting to zip files...')
 start_time = time.time()
-with ZipFile(config_variables["zip_path"], 'w') as ZIP_FILE:
+with ZipFile(zipname, 'w') as ZIP_FILE:
     add_files_to_zip(ZIP_FILE, config_variables["root_path"])
 
 runtime = time.time() - start_time
