@@ -18,14 +18,14 @@ parser.add_argument('--unattended', type=bool, default=True,
 args = vars(parser.parse_args())
 unattended = args['unattended']
 
-# Setting up and reading the config 
+# Setting up and reading the config
 config = cp.ConfigParser()
 config.read("config.ini")
 config_variables = config["VARIABLES"]
 config_options = config["OPTIONS"]
 sha_check = config_options.getboolean('sha_check')
 
-#Set some time variables
+# Set some time variables
 today = dt.today().strftime('%Y-%m-%d')
 now = dt.now()
 current_time = now.strftime('%H:%M:%S')
@@ -45,6 +45,8 @@ lg.info('Preparing...')
 
 # Load/Setup the json
 data = {}
+
+
 def implement(json, data):
     """Loads data from a JSON"""
     lg.info('Reading data from data.json')
@@ -54,6 +56,8 @@ def implement(json, data):
         else:
             data[key] = value
     return data
+
+
 try:
     implement(json.load(open(config_variables["data_path"])), data)
 except FileNotFoundError:
@@ -76,7 +80,7 @@ try:
             continue
         else:
             lg.debug(line)
-            line = os.path.normpath(path)
+            os.path.normpath(path=line)
             backfiles.append(line.replace('\n', ''))
 except FileNotFoundError:
     lg.critical(
@@ -88,7 +92,7 @@ if data['last'] == today:
     lg.info('Detected that there already ran an update today; asking for new name...')
     if unattended:
         lg.info('Program running in unattended mode; adding time to name')
-        zipname = f'{today}({current_time}).zip'
+        zipname = f'{today}({current_time}).'
     else:
         zipname = input(
             'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')
@@ -107,41 +111,47 @@ else:
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
 
 lg.info('Starting to zip files...')
-with ZipFile(config_variables["zip_path"], 'w') as zip:
-    add_files_to_zip(zip, config_variables["root_path"])
+start_time = time.time()
+with ZipFile(config_variables["zip_path"], 'w') as ZIP_FILE:
+    add_files_to_zip(ZIP_FILE, config_variables["root_path"])
 
-def add_files_to_zip(zip, folder):
-    for root, dirs, files in os.walk(folder):
-            for file in files:
-                file_with_path = os.path.join(root, file)
-                if file_with_path in backfiles:
-                    if sha_check:
-                        sha = hl.sha256(open(file_with_path, 'rb').read()).hexdigest()
-                        if file_with_path not in data['sha'].keys():
-                            data['sha'][file_with_path] = sha
-                            lg.debug(f'Adding {file_with_path} to the sha list')
-                            zip.write(file_with_path)
-                            lg.info(f'Added {file_with_path} to the zip')
-                        elif sha != data['sha'][file_with_path]:
-                            zip.write(file_with_path)
-                            lg.info(f'Added {file_with_path} to the zip')
-                        else:
-                            lg.info(f'{file_with_path} has not been changed since last backup')
-                    else:
-                        lg.debug(f'Adding {file} to zip')
-                        zip.write(file_with_path)
-            for folder in dirs:
-                if os.path.join(root, folder) in backfiles:
-                    add_folder_to_zip(zip, folder)
-                else:
-                    add_files_to_zip(zip, folder)
 
-def add_folder_to_zip(zip, folder):
+def add_files_to_zip(zip_file, folder):
     for root, dirs, files in os.walk(folder):
         for file in files:
-            zip.write(os.path.join(root, file))
-        for folder in dirs:
-            add_folder_to_zip(zip, folder)
+            file_with_path = os.path.join(root, file)
+            if file_with_path in backfiles:
+                if sha_check:
+                    with open(file_with_path, 'rb') as f:
+                        sha = hl.sha256(f.read()).hexdigest()
+                    if file_with_path not in data['sha'].keys():
+                        data['sha'][file_with_path] = sha
+                        lg.debug(f'Adding {file_with_path} to the sha list')
+                        zip_file.write(file_with_path)
+                        lg.info(f'Added {file_with_path} to the zip')
+                    elif sha != data['sha'][file_with_path]:
+                        zip_file.write(file_with_path)
+                        lg.info(f'Added {file_with_path} to the zip')
+                    else:
+                        lg.info(
+                            f'{file_with_path} has not been changed since last backup')
+                else:
+                    lg.debug(f'Adding {file} to zip')
+                    zip_file.write(file_with_path)
+        for dir in dirs:
+            if os.path.join(root, dir) in backfiles:
+                add_folder_to_zip(zip_file, os.path.join(root, dir))
+            else:
+                add_files_to_zip(zip_file, os.path.join(root, dir))
+
+
+def add_folder_to_zip(zip_file, folder):
+    for root, dirs, files in os.walk(folder):
+        for file in files:
+            zip_file.write(os.path.join(root, file))
+        for dir in dirs:
+            add_folder_to_zip(zip_file, os.path.join(root, dir))
+
 
 runtime = time.time() - start_time
 lg.info(f'Done writing to {zipname}; took {runtime} seconds.')
@@ -155,7 +165,8 @@ lg.info('Starting transfer')
 start_time = time.time()
 ftp = pk.Transport((config_variables["host"], int(config_variables["port"])))
 lg.debug('Set up FTP object')
-ftp.connect(username=config_variables["user"], password=config_variables["pass"])
+ftp.connect(username=config_variables["user"],
+            password=config_variables["pass"])
 sftp = pk.SFTPClient.from_transport(ftp)
 lg.info(f'Sending {zipname}...')
 sftp.put(f'./{zipname}', 'backups/' +
