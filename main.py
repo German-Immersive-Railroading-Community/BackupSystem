@@ -92,7 +92,7 @@ if data['last'] == today:
     lg.info('Detected that there already ran an update today; asking for new name...')
     if unattended:
         lg.info('Program running in unattended mode; adding time to name')
-        zipname = f'{today}({current_time}).'
+        zipname = f'{today}({current_time}).zip'
     else:
         zipname = input(
             'There already ran a update today!\nWhat should be the name of the file (with .zip, empty for overwrite)?> ')
