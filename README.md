@@ -10,7 +10,7 @@
   - [1.4. Command line arguments](#14-command-line-arguments)
   - [1.5. Future features](#15-future-features)
 # 1. BackupSystem
-A universal system for making Backups of the GIRC Server. It packs all the files/folders that need to be backed up into a zip-file and sends it to a Backupserver over SFTP (not FTPS!). If there are any questions or bugs feel free to open an issue.
+A universal system for making Backups. It packs all the files/folders that need to be backed up into a zip-file and sends it to a Backupserver over SFTP (not FTPS!). If there are any questions or bugs feel free to open an issue.
 
 ## 1.1. Requirements
 The Backupserver will need a folder with the current year-month ('YYYY-mm'). This _can_ be made through Cron or manually.  
@@ -23,7 +23,7 @@ What the contents of these are and where they are saved is listed below.
 
 ## 1.2. The Files
 ### 1.2.1. backfiles.txt
-This file holds the files and folders that should be backed up by the program. Every file/folder needs to be written on a seperate line with its exact name, without it's root folder (`./testfolder/testfile.txt > testfile.txt` or `./testfolder/testfolder2 > testfolder2`). You can use a '#' at the first character on a line to make the line a comment and therefore ignored. It can be anywhere, but the path needs to be specified in the [config.ini](#123-configini).
+This file holds the files and folders that should be backed up by the program. Every file/folder needs to be written on a seperate line with its exact absolute path. You can use a '#' at the first character on a line to make the line a comment and therefore ignored.
 
 ### 1.2.2. data.json
 You can either create this file in the program rundirectory and leave it alone or let the program do it. It stores the SHA256 of all files that have ever been backed up and the last time the backup ran. If you want to backup a file that hasn't changed, delete the corresponding entry in the json or turn off the SHA-Check in the [config](#123-configini) (DISCLAIMER: This will backup all files, no matter if new/changed or not).  
