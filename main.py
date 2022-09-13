@@ -106,17 +106,23 @@ else:
     lg.info(f'Zip name: {zipname}')
 
 # Go trough the files, check if the file/folder exists in backfiles list
-# If exist: Check the files for their SHA (or not, depending on the option) and add folder/file to the zip
+# If exist: Check the files for their SHA (or not, depending on the option)
+# and add folder/file to the zip
 # Else: continue
 # Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
 
-lg.info('Starting to zip files...')
-start_time = time.time()
-with ZipFile(config_variables["zip_path"], 'w') as ZIP_FILE:
-    add_files_to_zip(ZIP_FILE, config_variables["root_path"])
+
+def add_folder_to_zip(zip_file: ZipFile, folder):
+    """Adds a whole folder to a zip file"""
+    for root, dirs, files in os.walk(folder):
+        for file in files:
+            zip_file.write(os.path.join(root, file))
+        for directory in dirs:
+            add_folder_to_zip(zip_file, os.path.join(root, directory))
 
 
-def add_files_to_zip(zip_file, folder):
+def add_files_to_zip(zip_file: ZipFile, folder):
+    """Adds all files in a folder to a zip file when conditions are met"""
     for root, dirs, files in os.walk(folder):
         for file in files:
             file_with_path = os.path.join(root, file)
@@ -138,20 +144,17 @@ def add_files_to_zip(zip_file, folder):
                 else:
                     lg.debug(f'Adding {file} to zip')
                     zip_file.write(file_with_path)
-        for dir in dirs:
-            if os.path.join(root, dir) in backfiles:
-                add_folder_to_zip(zip_file, os.path.join(root, dir))
+        for directory in dirs:
+            if os.path.join(root, directory) in backfiles:
+                add_folder_to_zip(zip_file, os.path.join(root, directory))
             else:
-                add_files_to_zip(zip_file, os.path.join(root, dir))
+                add_files_to_zip(zip_file, os.path.join(root, directory))
 
 
-def add_folder_to_zip(zip_file, folder):
-    for root, dirs, files in os.walk(folder):
-        for file in files:
-            zip_file.write(os.path.join(root, file))
-        for dir in dirs:
-            add_folder_to_zip(zip_file, os.path.join(root, dir))
-
+lg.info('Starting to zip files...')
+start_time = time.time()
+with ZipFile(config_variables["zip_path"], 'w') as ZIP_FILE:
+    add_files_to_zip(ZIP_FILE, config_variables["root_path"])
 
 runtime = time.time() - start_time
 lg.info(f'Done writing to {zipname}; took {runtime} seconds.')
