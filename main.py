@@ -76,69 +76,13 @@ try:
             continue
         else:
             lg.debug(line)
+            line = os.path.normpath(path)
             backfiles.append(line.replace('\n', ''))
 except FileNotFoundError:
     lg.critical(
         'The file containing the files and folders that should be backed up (backfiles.txt) has not been found!')
     exit()
 lg.info('Done reading backfiles.txt')
-
-# Go trough the files, check if the file/folder exists in backfiles list
-# If exist: Check the files for their SHA (or not, depending on the option) and add folder/file to the zip
-# Else: continue
-# Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
-
-
-def add_zip(dir: str, zip: ZipFile, json_data: dict, backf: list, include_all: bool = True):
-    """Recurses into directorys and adds them to the backup
-    Returns the given JSON and updated backfiles.txt"""
-    for root, dirs, files in os.walk(dir):
-        for f in files:
-            if include_all:
-                filepath = str(root + '/' + f).replace('//', '/')
-                lg.debug(f'''"Include all" is true; backing up {filepath} ''')
-                filepath_local = filepath.replace(config_variables["path"], '')
-                json_data['sha'][filepath_local] = hl.sha256(
-                    open(filepath, 'rb').read()).hexdigest()
-                zip.write(filepath, filepath_local)
-            else:
-                if f in backf:
-                    lg.debug(f'{f} has been found in backfiles; backing up')
-                    try:
-                        filepath = str(root + '/' + f).replace('//', '/')
-                        sha = hl.sha256(
-                            open(filepath, 'rb').read()).hexdigest()
-                        if sha_check:
-                            if sha == json_data['sha'][filepath_local]:
-                                lg.debug('''SHA didn't change; ignoring ''')
-                                backf.remove(f)
-                                continue
-                            else:
-                                lg.debug('SHA changed; adding to zip')
-                                json_data['sha'][filepath_local] = sha
-                                zip.write(filepath, filepath_local)
-                                backf.remove(f)
-                        else:
-                            lg.debug('SHA-Check disabled, backing up')
-                            zipfile.write(filepath, filepath_local)
-                            data['sha'][filepath_local] = sha
-                            backfiles.remove(f)
-                    except KeyError:
-                        lg.debug('No old SHA found; adding')
-                        json_data['sha'][filepath_local] = sha
-                        zip.write(filepath, filepath_local)
-                        backf.remove(f)
-                else:
-                    lg.debug(f'{f} not found in backfiles; ignoring')
-                    continue
-        for d in dirs:
-            lg.debug(f'Backing up the folders in {dir}')
-            if d in backf:
-                backf.remove(d)
-                json_data, backf = add_zip(
-                    root + '/' + d, zip, json_data, backf)
-    return json_data, backf
-
 
 if data['last'] == today:
     lg.info('Detected that there already ran an update today; asking for new name...')
@@ -156,56 +100,51 @@ else:
     zipname = today + ".zip"
     data['last'] = today
     lg.info(f'Zip name: {zipname}')
-zipfile = ZipFile(zipname, 'w')
-lg.info(f'Done preparing; start writing to {zipname}')
-start_time = time.time()
-for root, dirs, files in os.walk(config_variables["path"]):
-    combined = dirs + files
-    lg.debug(f'Found dirs/files: {combined}')
-    for f in combined:
-        if f in backfiles:
-            lg.debug(f'{f} has been found in backfiles; backing up')
-            try:
-                filepath = str(root + '/' + f).replace('//', '/')
-                filepath_local = filepath.replace(config_variables["path"], '')
-                lg.debug('Getting SHA')
-                sha = hl.sha256(open(filepath, 'rb').read()).hexdigest()
-                if sha_check:
-                    if sha == data['sha'][filepath_local]:
-                        lg.debug('''SHA didn't change; ignoring ''')
-                        backfiles.remove(f)
-                        continue
+
+# Go trough the files, check if the file/folder exists in backfiles list
+# If exist: Check the files for their SHA (or not, depending on the option) and add folder/file to the zip
+# Else: continue
+# Help for os.walk: https://docs.python.org/3/library/os.html#os.walk
+
+lg.info('Starting to zip files...')
+with ZipFile(config_variables["zip_path"], 'w') as zip:
+    add_files_to_zip(zip, config_variables["root_path"])
+
+def add_files_to_zip(zip, folder):
+    for root, dirs, files in os.walk(folder):
+            for file in files:
+                file_with_path = os.path.join(root, file)
+                if file_with_path in backfiles:
+                    if sha_check:
+                        sha = hl.sha256(open(file_with_path, 'rb').read()).hexdigest()
+                        if file_with_path not in data['sha'].keys():
+                            data['sha'][file_with_path] = sha
+                            lg.debug(f'Adding {file_with_path} to the sha list')
+                            zip.write(file_with_path)
+                            lg.info(f'Added {file_with_path} to the zip')
+                        elif sha != data['sha'][file_with_path]:
+                            zip.write(file_with_path)
+                            lg.info(f'Added {file_with_path} to the zip')
+                        else:
+                            lg.info(f'{file_with_path} has not been changed since last backup')
                     else:
-                        lg.debug('SHA changed; adding to zip')
-                        zipfile.write(filepath, filepath_local)
-                        data['sha'][filepath_local] = sha
-                        backfiles.remove(f)
+                        lg.debug(f'Adding {file} to zip')
+                        zip.write(file_with_path)
+            for folder in dirs:
+                if os.path.join(root, folder) in backfiles:
+                    add_folder_to_zip(zip, folder)
                 else:
-                    lg.debug('SHA-Check disabled, backing up')
-                    zipfile.write(filepath, filepath_local)
-                    data['sha'][filepath_local] = sha
-                    backfiles.remove(f)
-            except IsADirectoryError:
-                lg.debug(f'{f} is a directory; backing up')
-                data, backfiles = add_zip(
-                    filepath + '/', zipfile, data, backfiles)
-                backfiles.remove(f)
-            except KeyError:
-                lg.debug('No old SHA found; adding')
-                data['sha'][filepath_local] = sha
-                zipfile.write(filepath, filepath_local)
-                backfiles.remove(f)
-        else:
-            lg.debug(f'{f} not found in backfiles; ignoring')
-            continue
-zipfile.close()
+                    add_files_to_zip(zip, folder)
+
+def add_folder_to_zip(zip, folder):
+    for root, dirs, files in os.walk(folder):
+        for file in files:
+            zip.write(os.path.join(root, file))
+        for folder in dirs:
+            add_folder_to_zip(zip, folder)
+
 runtime = time.time() - start_time
 lg.info(f'Done writing to {zipname}; took {runtime} seconds.')
-if len(backfiles) > 0:
-    missing_files = ""
-    for i in backfiles:
-        missing_files += f'{i}, '
-    lg.warning(f'Some files/folders have not been found: {missing_files}')
 lg.info('Updating data.json')
 with open(config_variables["data_path"], 'w') as outfile:
     json.dump(data, outfile)
