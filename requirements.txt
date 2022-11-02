@@ -1,5 +1,5 @@
 autopep8==2.0.0
-bcrypt==4.0.0
+bcrypt==4.0.1
 cffi==1.15.1
 cryptography==38.0.3
 paramiko==2.11.0
